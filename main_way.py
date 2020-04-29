@@ -137,6 +137,10 @@ knn_imp=KNNImputer(n_neighbors=200)
 train_data=knn_imp.fit_transform(train_data)
 test_data=knn_imp.transform(test_data)
 
+std_=StandardScaler()
+train_data=std_.fit_transform(train_data)
+test_data=std_.fit_transform(test_data)
+
 # try PCA to extration data, but it will not enhance prediction performance here so do not use it
 # pca=PCA(n_components=10)
 # train_data=pca.fit_transform(train_data)
@@ -279,12 +283,17 @@ test_data=np.concatenate([test_num_group,one_hot_test,test.values],axis=1)
 knn_imp=KNNImputer(n_neighbors=200)
 train_data=knn_imp.fit_transform(train_data)
 test_data=knn_imp.transform(test_data)
-
+train_data=std_.fit_transform(train_data)
+test_data=std_.fit_transform(test_data)
 # %%
-nn_clf=MLPClassifier(random_state = 42,activation='logistic',alpha=0.1,hidden_layer_sizes=(50,20))
-nn_clf.fit(train_data,train_label)
-test_ans=nn_clf.predict_proba(test_data)
-test_label_nn=nn_clf.predict(test_data)
+from sklearn.ensemble import VotingClassifier
+nn_clf_1=MLPClassifier(random_state = 42,activation='logistic',alpha=0.1,hidden_layer_sizes=(50,20))
+nn_clf_2=MLPClassifier(random_state = 42,activation='logistic',alpha=0.1,hidden_layer_sizes=(40,20))
+nn_clf_3=MLPClassifier(random_state = 42,activation='logistic',alpha=0.08,hidden_layer_sizes=(40,20))
+voting_clf=VotingClassifier(estimators=[('nn1',nn_clf_1),('nn2',nn_clf_2),('nn3',nn_clf_3)],voting='soft',weights=[0.33,0.33,0.34])
+voting_clf.fit(train_data,train_label)
+test_ans=voting_clf.predict_proba(test_data)
+test_label_nn=voting_clf.predict(test_data)
 test_label_nn=pd.DataFrame(test_label_nn,columns=['label'])
 test_label_nn.to_csv('./data/testlabel_nn.csv')
 ans_new=pd.DataFrame(test_ans,columns=['prob_False','prob_True'])
